@@ -1,6 +1,13 @@
 import pygame
 import sys
 import pygame.gfxdraw
+import random
+from math import sin, cos, pi
+
+
+# CONSTANTS
+
+WIDTH, HEIGHT = 500, 500
 
 # CLASSES
 
@@ -37,19 +44,43 @@ class Ball:
 		self.pos = pygame.Vector2 (500 // 2, 500 // 2)
 		self.vel = pygame.Vector2 (0, 0)
 		self.color = pygame.Color ('#FAEBD7')
+		self.speed = 100
+		self.angle = random.randint(0, 360)
+		self.angle = self.angle * pi / 180.0 # convert degrees to radians
+		print (self.angle)
 
 	def draw (self, surface):
 		pygame.gfxdraw.aacircle (surface, int(self.pos.x), int(self.pos.y), self.rad, self.color)
 		pygame.gfxdraw.filled_circle(surface, int(self.pos.x), int(self.pos.y), self.rad, self.color)
+
+	def move (self, dt):
+
+		self.vel.x = self.speed * cos (self.angle)
+		self.vel.y = self.speed * sin (self.angle)
+		self.pos += self.vel * dt
 		
+	def collide (self):
+		top = self.pos.y - self.rad
+		bottom = self.pos.y + self.rad
+
+		zeroVector = pygame.Vector2(0, 0)
+		
+		# collide with top
+		if top < 0 or bottom > HEIGHT:
+			self.vel.y = -self.vel.y
+			self.angle = zeroVector.angle_to(self.vel) * pi / 180.0
+			
+		# collide right
+
+		# collide left
 
 
 # SETUP
-window = pygame.display.set_mode((500,500))
+window = pygame.display.set_mode((WIDTH, HEIGHT))
 
 clock = pygame.time.Clock()
 
-paddle_R = Paddle (500 - 25, 250 - 75 // 2)
+paddle_R = Paddle (WIDTH - 25, 250 - 75 // 2)
 paddle_L = Paddle (0, 250 - 75 // 2)
 
 ball = Ball ()
@@ -90,6 +121,10 @@ while 1:
 
 
 	dt = clock.get_time() / 1000.0
+
+	ball.collide()
+
+	ball.move(dt)
 	paddle_L.move (dt)
 	paddle_R.move (dt)
 
