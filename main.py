@@ -2,7 +2,7 @@ import pygame
 import sys
 import pygame.gfxdraw
 import random
-from math import sin, cos, pi
+from math import sin, cos, atan, pi, floor
 
 
 # CONSTANTS
@@ -28,7 +28,18 @@ class Paddle:
 		self.vel.y = vy		
 
 	def move (self, dt):
-		self.pos += self.vel * dt
+
+		adjustedVelocity = self.vel * dt
+
+		# check if at top
+		if self.rect.top + adjustedVelocity.y < 0:
+			return
+
+		if self.rect.bottom + adjustedVelocity.y > HEIGHT:
+			return
+
+		# actually do the move
+		self.pos += adjustedVelocity
 		self.bindRect()
 
 	def bindRect (self):
@@ -45,9 +56,28 @@ class Ball:
 		self.vel = pygame.Vector2 (0, 0)
 		self.color = pygame.Color ('#FAEBD7')
 		self.speed = 100
-		self.angle = random.randint(0, 360)
-		self.angle = self.angle * pi / 180.0 # convert degrees to radians
-		print (self.angle)
+		self.angle = 0
+		self.setAngle()
+		self.hitbox = pygame.Rect(0, 0, self.rad * 2, self.rad * 2)
+		self.hitbox.center = (self.pos.x, self.pos.y)
+
+	def setAngle (self):
+		theta = atan( (HEIGHT/2) / (WIDTH/2) )
+		
+		tr = floor(theta * 180 / pi)		# top-right angle
+		br = floor(-theta * 180 / pi	)	# bottom-right angle
+		tl = floor((pi - theta) * 180 / pi) # top-left angle
+		bl = floor((pi + theta) * 180 / pi) # bot-left angle
+
+		direction = random.choice(['left', 'right'])
+
+		if direction == 'left': 
+			self.angle = random.randrange(tl, bl)
+		else:
+			self.angle = random.randrange(br, tr)
+
+		self.angle = self.angle * pi / 180
+
 
 	def draw (self, surface):
 		pygame.gfxdraw.aacircle (surface, int(self.pos.x), int(self.pos.y), self.rad, self.color)
@@ -58,6 +88,8 @@ class Ball:
 		self.vel.x = self.speed * cos (self.angle)
 		self.vel.y = self.speed * sin (self.angle)
 		self.pos += self.vel * dt
+
+		self.hitbox.center = (self.pos.x, self.pos.y)
 		
 	def collide (self):
 		top = self.pos.y - self.rad
@@ -73,6 +105,10 @@ class Ball:
 		# collide right
 
 		# collide left
+
+	def collidePaddles (self, paddle):
+		if self.hitbox.colliderect (paddle.rect):
+			print ('hit the paddle')
 
 
 # SETUP
@@ -116,6 +152,7 @@ while 1:
 	if keys [pygame.K_s]:
 		paddle_L.setVerticalVelocity (speed)
 
+	# if w key and s key aren't pressed 
 	if keys[pygame.K_w] == 0 and keys[pygame.K_s] == 0:
 		paddle_L.setVerticalVelocity(0)
 
@@ -123,6 +160,8 @@ while 1:
 	dt = clock.get_time() / 1000.0
 
 	ball.collide()
+	ball.collidePaddles (paddle_L)
+	ball.collidePaddles (paddle_R)
 
 	ball.move(dt)
 	paddle_L.move (dt)
@@ -135,3 +174,9 @@ while 1:
 	paddle_R.draw (window)
 
 	pygame.display.update()
+
+
+# TODO: fix random angle
+# TODO: random angle on reset
+# TODO: prevent stuck in paddles
+# TODO: prevent paddles from going out of bounds - COMPLETE
